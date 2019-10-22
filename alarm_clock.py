@@ -26,6 +26,7 @@ my_rgb.fill( (0, 0, 0) )
 my_rgb.write()                                           #RGB灯
 
 _event_changed_10 = False
+_dark_mode = False
 
 tim10 = Timer(10)
 
@@ -61,7 +62,7 @@ tim8 = Timer(8)
 def timer8_tick(_):                           #设置闹钟提醒
     global _event_changed_8
     #every 6:50 on weekday 
-    if (time.localtime()[3] == 10 and time.localtime()[4] == 23 and time.localtime()[6] < 5):
+    if (time.localtime()[3] == 6 and time.localtime()[4] == 50 and time.localtime()[6] < 5):
         if not _event_changed_8:
             _event_changed_8 = True; 
             on_custom_event_8()
@@ -71,9 +72,10 @@ def timer8_tick(_):                           #设置闹钟提醒
 def on_custom_event_8():
     global time_s1
     oled.fill_rect(0, 48, 128, 16, 0)
-    oled.DispChar("闹钟时间到了", 27, 46, 1)
+    oled.DispChar("闹钟时间到！", 27, 46, 1)
     oled.show()
-    while not button_b.value() == 0:
+    counta = 0 ##最多响1分钟120次
+    while not (button_b.value() == 0 or button_a.value() == 0 or counta >= 120 ):
         music.play('D4:1')
         my_rgb.fill( (102, 0, 0) )
         my_rgb.write()
@@ -81,6 +83,7 @@ def on_custom_event_8():
         my_rgb.fill( (0, 0, 0) )
         my_rgb.write()
         time.sleep_ms(100)
+        counta += 1 
     oled.fill_rect(0, 48, 128, 16, 0)
 
 
@@ -131,21 +134,55 @@ def refresh():
     oled.DispChar("%s~%s℃" %(todaylow,todayHigh),75,25)       #显示今日最低、最高气温
 
     oled.show()
+    
+def refresh_time():
+    time_s1 = ''.join([str(x) for x in [time.localtime()[3] // 10, time.localtime()[3] % 10, ":", time.localtime()[4] // 10, time.localtime()[4] % 10, ":", time.localtime()[5] // 10, time.localtime()[5] % 10]])
+    oled.DispChar(time_s1, 40, 47, 1)                                          #显示实时时间，实时更新
+    oled.show()
+
+#通过读取光线亮度，调整背光，黑暗环境下有声音，点亮背光10秒。
+def adjust_backlight():
+    global _sec
+    global _dark_mode
+    #print('light:%d,Sound:%d' % (light.read(),sound.read()))
+    #连续10秒黑暗且无声环境，关闭背光
+    if light.read() == 0 and sound.read() == 0:
+        if _sec == -1 :
+            _sec = time.ticks_ms()
+            print('dark mode dectect~~~ _sec =',_sec)
+        elif _dark_mode == False :
+            if (time.ticks_ms() - _sec ) >= 10*1000 :
+                print('enter dark mode')
+                _dark_mode = True
+    else :
+        if _dark_mode == True :
+            print('out of dark mode')
+            refresh_time()
+            refresh()
+        _sec = -1
+        _dark_mode = False
+        
 
 refresh()          #数据更新
 
 tim1 = Timer(1)
-tim1.init(period=1800000, mode=Timer.PERIODIC,callback=lambda _:refresh())      #定时，每半个钟刷新一次
+tim1.init(period=1800000, mode=Timer.PERIODIC,callback=lambda _:refresh())     #定时，每半个钟刷新一次
 
 
 while True:
     my_rgb.fill( (102, 102, 102) )
     my_rgb.write()                                                            #亮灯
-    time_s1 = ''.join([str(x) for x in [time.localtime()[3] // 10, time.localtime()[3] % 10, ":", time.localtime()[4] // 10, time.localtime()[4] % 10, ":", time.localtime()[5] // 10, time.localtime()[5] % 10]])
-    oled.DispChar(time_s1, 40, 47, 1)                                          #显示实时时间，实时更新
-    oled.show()
+    
+    #刷新时间
+    if _dark_mode == False :
+        refresh_time()
+    else:
+        oled.fill(0)
+        oled.show()
+        
     #tim10.init(period=100, mode=Timer.PERIODIC, callback=timer10_tick)         #整点报时
     tim8.init(period=100, mode=Timer.PERIODIC, callback=timer8_tick)           #闹钟
-
+    
+    adjust_backlight()
 
 
