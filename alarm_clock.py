@@ -15,7 +15,8 @@ oled.DispChar('联网中...',40,25)     #OLED屏显示联网提示
 oled.show()
 
 mywifi=wifi()
-mywifi.connectWiFi("SynologySmartConnect","=ge1412ro")          #连接 WiFi 网络
+#mywifi.connectWiFi("SynologySmartConnect","=ge1412ro")          #连接 WiFi 网络
+mywifi.connectWiFi("nopluz","Hoopluz888")
 
 my_rgb = neopixel.NeoPixel(Pin(Pin.P13), n=4, bpp=3, timing=1)
 
@@ -60,9 +61,12 @@ tim8 = Timer(8)
 def timer8_tick(_):                           #设置闹钟提醒
     global _event_changed_8
     #every 6:50 on weekday 
-    if (time.localtime()[3] == 6 and time.localtime()[4] == 50 and time.localtime()[6] < 5):
-        if not _event_changed_8: _event_changed_8 = True; on_custom_event_8()
-    else: _event_changed_8 = False
+    if (time.localtime()[3] == 10 and time.localtime()[4] == 23 and time.localtime()[6] < 5):
+        if not _event_changed_8:
+            _event_changed_8 = True; 
+            on_custom_event_8()
+    else: 
+        _event_changed_8 = False
 
 def on_custom_event_8():
     global time_s1
@@ -140,7 +144,7 @@ while True:
     time_s1 = ''.join([str(x) for x in [time.localtime()[3] // 10, time.localtime()[3] % 10, ":", time.localtime()[4] // 10, time.localtime()[4] % 10, ":", time.localtime()[5] // 10, time.localtime()[5] % 10]])
     oled.DispChar(time_s1, 40, 47, 1)                                          #显示实时时间，实时更新
     oled.show()
-    tim10.init(period=100, mode=Timer.PERIODIC, callback=timer10_tick)         #整点报时
+    #tim10.init(period=100, mode=Timer.PERIODIC, callback=timer10_tick)         #整点报时
     tim8.init(period=100, mode=Timer.PERIODIC, callback=timer8_tick)           #闹钟
 
 
